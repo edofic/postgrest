@@ -208,7 +208,7 @@ app conf reqBody req =
 
     ([table], "DELETE") -> do
       let qt = qualify table
-      let del = countT
+          del = countT
             . returningStarT
             . whereT qt qq
             $ deleteFrom qt
@@ -225,7 +225,7 @@ app conf reqBody req =
     path          = pathInfo req
     verb          = requestMethod req
     qq            = queryString req
-    qualify       = QualifiedTable schema
+    qualify       = QualifiedIdentifier schema
     hdrs          = requestHeaders req
     schema        = requestedSchema (cs $ configV1Schema conf) hdrs
     authenticator = cs $ configDbUser conf
