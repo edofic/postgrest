@@ -174,12 +174,12 @@ update t cols vals = B.Stmt
 
 wherePred :: QualifiedTable -> Net.QueryItem -> PStmt
 wherePred table (col, predicate) =
-  B.Stmt (" " <> pgFmtJsonbPath table (cs col) <> " " <> op <> " " <>
-      if opCode `elem` ["is","isnot"] then whiteList value
-                                 else cs sqlValue)
-      empty True
-
+  B.Stmt (" " <> left <> " " <> op <> " " <> right) empty True
   where
+    (flipColumnRhs, column) = pgFmtArrayPath $ pgFmtJsonbPath table $ cs col
+    rhs = if opCode `elem` ["is","isnot"] then whiteList value
+                                          else cs sqlValue
+    (left, right) = if flipColumnRhs then (rhs, column) else (column, rhs)
     opCode:rest = T.split (=='.') $ cs $ fromMaybe "." predicate
     value = T.intercalate "." rest
     whiteList val = fromMaybe (cs (pgFmtLit val) <> "::unknown ")
@@ -237,6 +237,14 @@ commaq  = B.Stmt ", " empty True
 
 andq :: PStmt
 andq = B.Stmt " and " empty True
+
+pgFmtArrayPath :: T.Text -> (Bool, T.Text)
+pgFmtArrayPath p
+  | T.isSuffixOf "[any]\"" p = (True, p' "any")
+  | T.isSuffixOf "[all]\"" p = (True, p' "all")
+  | otherwise                = (False, p)
+  where
+    p' f =  f <> "(" <> (T.dropEnd 6 p) <> "\")"
 
 data JsonbPath =
     ColIdentifier T.Text
